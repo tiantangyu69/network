@@ -127,6 +127,7 @@ public class NioNonBlockingEchoServer {
 		SocketChannel socketChannel = (SocketChannel) key
 				.channel();
 		ByteBuffer readBuffer = ByteBuffer.allocate(32);
+		System.out.println(socketChannel.isOpen());
 		socketChannel.read(readBuffer);
 		readBuffer.flip();
 		buffer.limit(buffer.capacity());
