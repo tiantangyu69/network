@@ -30,23 +30,34 @@ public class MulThreadNioNonBlockingEchoServer {
 		serverSocketChannel = ServerSocketChannel.open();// 打开通道
 		serverSocketChannel.socket().setReuseAddress(true);// 可以重用端口
 		serverSocketChannel.socket().bind(new InetSocketAddress(PORT));// 绑定本地端口
-		System.out.println("非阻塞服务器已启动，端口号为：" + PORT);
+		System.out.println("阻塞非阻塞服务器已启动，端口号为：" + PORT);
+	}
+
+	public void accept() throws IOException {
+		while (true) {
+			SocketChannel socketChannel = serverSocketChannel.accept();
+			System.out.println("接收到客户端连接：地址"
+					+ socketChannel.socket().getInetAddress() + ",端口号"
+					+ socketChannel.socket().getPort());
+			socketChannel.configureBlocking(false);
+			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			synchronized (this) {
+				selector.wakeup();
+				socketChannel.register(selector, SelectionKey.OP_READ
+						| SelectionKey.OP_WRITE, buffer);
+			}
+		}
 	}
 
 	public void service() throws IOException {
-		SocketChannel socketChannel = serverSocketChannel.accept();
-		System.out.println("接收到客户端连接：地址"
-				+ socketChannel.socket().getInetAddress() + ",端口号"
-				+ socketChannel.socket().getPort());
-		socketChannel.configureBlocking(false);
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		synchronized (this) {
-			selector.wakeup();
-			socketChannel.register(selector, SelectionKey.OP_READ
-					| SelectionKey.OP_WRITE, buffer);
-		}
 
-		while (selector.select() > 0) {
+		while (true) {
+			synchronized (this) {
+			}
+			int n = selector.select();
+			if (n == 0) {
+				continue;
+			}
 			Set<SelectionKey> keys = selector.selectedKeys();
 			Iterator<SelectionKey> it = keys.iterator();
 			while (it.hasNext()) {
@@ -137,9 +148,21 @@ public class MulThreadNioNonBlockingEchoServer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		MulThreadNioNonBlockingEchoServer server;
+		final MulThreadNioNonBlockingEchoServer server;
 		try {
 			server = new MulThreadNioNonBlockingEchoServer();
+
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						server.accept();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+
 			server.service();
 		} catch (IOException e) {
 			e.printStackTrace();
