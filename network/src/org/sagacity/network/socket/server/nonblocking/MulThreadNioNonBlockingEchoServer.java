@@ -98,6 +98,7 @@ public class MulThreadNioNonBlockingEchoServer {
 		if (data.indexOf("\r\n") == -1)
 			return;
 		String outputData = data.substring(0, data.indexOf("\n") + 1);
+		System.out.println(outputData);
 		ByteBuffer outputBuffer = encode("echo:" + outputData);
 		while (outputBuffer.hasRemaining()) {
 			socketChannel.write(outputBuffer);
